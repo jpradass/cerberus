@@ -12,7 +12,20 @@ var rootCmd = &cobra.Command{
 	Short: "Cerberus is a gatekeeper for everything you want to keep",
 	Long:  "Cerberus is a Key Value application that keeps everything inside a local database encrypted.",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Hello from cerberus")
+		fmt.Println(`
+                            /\_/\____,
+                  ,___/\_/\ \  ~     /
+                  \     ~  \ )   XXX
+                    XXX     /    /\_/\___,
+                       \o-o/-o-o/   ~    /
+                        ) /     \    XXX
+                       _|    / \ \_/
+                    ,-/   _  \_/   \
+                   / (   /____,__|  )
+                  (  |_ (    )  \) _|
+                 _/ _)   \   \__/   (_
+                (,-(,(,(,/      \,),),)
+    `)
 	},
 }
 
