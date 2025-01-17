@@ -12,9 +12,13 @@ var (
 	err       error
 	userhome  string  = os.Getenv("HOME")
 	db        *sql.DB = nil
-	querySQL          = `SELECT value FROM cerberus_den WHERE key = ?;`
-	insertSQL         = `INSERT INTO cerberus_den (key, value) VALUES (?, ?);`
-	initSQL           = `CREATE TABLE IF NOT EXISTS cerberus_den (key TEXT PRIMARY KEY, value TEXT);`
+	querySQL          = `SELECT value, is_path FROM cerberus_den WHERE key = ?;`
+	insertSQL         = `INSERT INTO cerberus_den (key, value, is_path) VALUES (?, ?, ?);`
+	initSQL           = `CREATE TABLE IF NOT EXISTS cerberus_den (
+  key TEXT PRIMARY KEY, 
+  value TEXT, 
+  is_path INTEGER NOT NULL CHECK (is_path IN (0, 1))
+);`
 )
 
 func Connect() error {
@@ -45,12 +49,12 @@ func CreateDen() error {
 	return nil
 }
 
-func SaveInDen(key, value string) error {
+func SaveInDen(key, value string, isPath int) error {
 	if err := checkConn(); err != nil {
 		return err
 	}
 
-	_, err := db.Exec(insertSQL, key, value)
+	_, err := db.Exec(insertSQL, key, value, isPath)
 	if err != nil {
 		return fmt.Errorf("error: cerberus didn't want to take the object into its den: %w", err)
 	}
@@ -58,27 +62,27 @@ func SaveInDen(key, value string) error {
 	return nil
 }
 
-func GetFromDen(key string) (string, error) {
+func GetFromDen(key string) (string, int, error) {
 	if err := checkConn(); err != nil {
-		return "", err
+		return "", 0, err
 	}
 
 	rows, err := db.Query(querySQL, key)
 	if err != nil {
-		return "", fmt.Errorf("error: cerberus didn't want to give the object away: %w", err)
+		return "", 0, fmt.Errorf("error: cerberus didn't want to give the object away: %w", err)
 	}
 
 	defer rows.Close()
 
-	var value string
+	value, isPath := "", 0
 	for rows.Next() {
-		if err := rows.Scan(&value); err != nil {
-			return "", fmt.Errorf("error: cerberus didn't want to give the object away: %w", err)
+		if err := rows.Scan(&value, &isPath); err != nil {
+			return "", 0, fmt.Errorf("error: cerberus didn't want to give the object away: %w", err)
 		}
 	}
 
 	// fmt.Printf("value: %s", value)
-	return value, nil
+	return value, isPath, nil
 }
 
 func CheckDenExistence() bool {

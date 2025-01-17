@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/jpradass/cerberus/db"
+	"github.com/jpradass/cerberus/fs"
 )
 
 func init() {
@@ -23,9 +24,20 @@ var takeCmd = &cobra.Command{
 		key := args[0]
 		cmd.Printf("key: %s\n", key)
 
-		value, err := db.GetFromDen(key)
+		value, isPath, err := db.GetFromDen(key)
 		if err != nil {
-			cmd.PrintErrf("%v\n", err)
+			cmd.PrintErrf("cerberus is confused: %v\n", err)
+			return
+		}
+
+		if isPath == 1 {
+			content, err := fs.ReadContent(value)
+			if err != nil {
+				cmd.PrintErrf("cerberus is confused: %v\n", err)
+				return
+			}
+
+			cmd.Printf("%x\n", content)
 			return
 		}
 
