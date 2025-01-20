@@ -5,6 +5,7 @@ import (
 
 	"github.com/jpradass/cerberus/db"
 	"github.com/jpradass/cerberus/fs"
+	dbmodels "github.com/jpradass/cerberus/models/db"
 )
 
 func init() {
@@ -21,16 +22,18 @@ var giveCmd = &cobra.Command{
 			return
 		}
 
-		key, value, isPath := args[0], args[1], 0
-		cmd.Printf("key: %s, value: %s\n", key, value)
+		entry := new(dbmodels.Entry)
+		entry.Key, entry.Value, entry.IsPath, entry.IsBinary = args[0], args[1], false, false
+		// cmd.Printf("key: %s, value: %s\n", key, value)
 
-		if fs.IsPath(value) {
-			isPath = 1
+		if fs.IsPath(entry.Value) {
+			entry.IsPath = true
 		}
 
-		if err := db.SaveInDen(key, value, isPath); err != nil {
+		if err := db.SaveInDen(entry); err != nil {
 			cmd.PrintErrf("cerberus is confused: %v\n", err)
 			return
 		}
+		cmd.Printf("key given to cerberus!\n")
 	},
 }

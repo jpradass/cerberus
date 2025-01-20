@@ -6,17 +6,20 @@ import (
 	"os"
 
 	_ "modernc.org/sqlite"
+
+	dbmodels "github.com/jpradass/cerberus/models/db"
 )
 
 var (
 	err       error
 	userhome  string  = os.Getenv("HOME")
 	db        *sql.DB = nil
-	querySQL          = `SELECT value, is_path FROM cerberus_den WHERE key = ?;`
-	insertSQL         = `INSERT INTO cerberus_den (key, value, is_path) VALUES (?, ?, ?);`
+	querySQL          = `SELECT value, is_binary, is_path FROM cerberus_den WHERE key = ?;`
+	insertSQL         = `INSERT INTO cerberus_den (key, value, is_binary, is_path) VALUES (?, ?, ?, ?);`
 	initSQL           = `CREATE TABLE IF NOT EXISTS cerberus_den (
   key TEXT PRIMARY KEY, 
   value TEXT, 
+  is_binary INTEGER NOT NULL CHECK (is_path IN (0, 1)),
   is_path INTEGER NOT NULL CHECK (is_path IN (0, 1))
 );`
 )
@@ -49,12 +52,12 @@ func CreateDen() error {
 	return nil
 }
 
-func SaveInDen(key, value string, isPath int) error {
+func SaveInDen(entry *dbmodels.Entry) error {
 	if err := checkConn(); err != nil {
 		return err
 	}
 
-	_, err := db.Exec(insertSQL, key, value, isPath)
+	_, err := db.Exec(insertSQL, entry.Key, entry.Value, entry.IsBinary, entry.IsPath)
 	if err != nil {
 		return fmt.Errorf("error: cerberus didn't want to take the object into its den: %w", err)
 	}
@@ -62,27 +65,27 @@ func SaveInDen(key, value string, isPath int) error {
 	return nil
 }
 
-func GetFromDen(key string) (string, int, error) {
+func GetFromDen(key string) (*dbmodels.Entry, error) {
 	if err := checkConn(); err != nil {
-		return "", 0, err
+		return nil, err
 	}
 
 	rows, err := db.Query(querySQL, key)
 	if err != nil {
-		return "", 0, fmt.Errorf("error: cerberus didn't want to give the object away: %w", err)
+		return nil, fmt.Errorf("error: cerberus didn't want to give the object away: %w", err)
 	}
 
 	defer rows.Close()
 
-	value, isPath := "", 0
+	entry := new(dbmodels.Entry)
 	for rows.Next() {
-		if err := rows.Scan(&value, &isPath); err != nil {
-			return "", 0, fmt.Errorf("error: cerberus didn't want to give the object away: %w", err)
+		if err := rows.Scan(&entry.Value, &entry.IsBinary, &entry.IsPath); err != nil {
+			return nil, fmt.Errorf("error: cerberus didn't want to give the object away: %w", err)
 		}
 	}
 
 	// fmt.Printf("value: %s", value)
-	return value, isPath, nil
+	return entry, nil
 }
 
 func CheckDenExistence() bool {
@@ -107,4 +110,8 @@ func checkConn() error {
 		}
 	}
 	return nil
+}
+
+func boolToInt(b bool) int {
+	return map[bool]int{true: 1, false: 0}[b]
 }

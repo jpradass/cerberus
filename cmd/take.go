@@ -22,25 +22,25 @@ var takeCmd = &cobra.Command{
 		}
 
 		key := args[0]
-		cmd.Printf("key: %s\n", key)
+		// cmd.Printf("key: %s\n", key)
 
-		value, isPath, err := db.GetFromDen(key)
+		entry, err := db.GetFromDen(key)
 		if err != nil {
 			cmd.PrintErrf("cerberus is confused: %v\n", err)
 			return
 		}
 
-		if isPath == 1 {
-			content, err := fs.ReadContent(value)
+		if entry.IsPath {
+			content, err := fs.ReadContent(entry.Value)
 			if err != nil {
 				cmd.PrintErrf("cerberus is confused: %v\n", err)
 				return
 			}
 
-			cmd.Printf("%x\n", content)
+			cmd.Printf("%x", content)
 			return
 		}
 
-		cmd.Printf("%s\n", value)
+		cmd.Printf("%s", entry.Value)
 	},
 }
